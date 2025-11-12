@@ -1,0 +1,16 @@
+/**
+ * Admin Styles for Square Payment Service Fee Plugin
+ */
+
+/* Settings Page */
+.sqpmt-settings-notice {
+    margin: 20px 0;
+    padding: 15px;
+    background: #fff;
+    border-left: 4px solid #4CAF50;
+}
+
+/* Test Connection Button */
+#sqpmt-test-result .notice {
+    margin-top: 0;
+}
