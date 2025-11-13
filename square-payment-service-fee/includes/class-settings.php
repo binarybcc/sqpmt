@@ -220,17 +220,17 @@ class SQPMT_Settings {
             'sqpmt_email_section'
         );
 
-        // Admin Email Enabled
-        register_setting('sqpmt_settings', 'sqpmt_admin_email_enabled', array(
+        // Admin Email Address
+        register_setting('sqpmt_settings', 'sqpmt_admin_email_address', array(
             'type' => 'string',
-            'sanitize_callback' => 'sanitize_text_field',
-            'default' => 'yes'
+            'sanitize_callback' => 'sanitize_email',
+            'default' => get_option('admin_email')
         ));
 
         add_settings_field(
-            'sqpmt_admin_email_enabled',
-            __('Send Admin Notification', 'square-payment-service-fee'),
-            array($this, 'admin_email_enabled_field'),
+            'sqpmt_admin_email_address',
+            __('Admin Notification Email', 'square-payment-service-fee'),
+            array($this, 'admin_email_address_field'),
             'sqpmt_settings',
             'sqpmt_email_section'
         );
@@ -419,18 +419,12 @@ class SQPMT_Settings {
         <?php
     }
 
-    public function admin_email_enabled_field() {
-        $value = get_option('sqpmt_admin_email_enabled', 'yes');
+    public function admin_email_address_field() {
+        $value = get_option('sqpmt_admin_email_address', get_option('admin_email'));
         ?>
-        <label>
-            <input type="checkbox" name="sqpmt_admin_email_enabled" value="yes" <?php checked($value, 'yes'); ?>>
-            <?php esc_html_e('Send notification email to admin after each transaction', 'square-payment-service-fee'); ?>
-        </label>
+        <input type="email" name="sqpmt_admin_email_address" value="<?php echo esc_attr($value); ?>" class="regular-text" placeholder="<?php echo esc_attr(get_option('admin_email')); ?>">
         <p class="description">
-            <?php printf(
-                esc_html__('Notifications will be sent to: %s', 'square-payment-service-fee'),
-                '<strong>' . esc_html(get_option('admin_email')) . '</strong>'
-            ); ?>
+            <?php esc_html_e('Enter the email address where admin notifications should be sent. Leave blank to disable admin notifications.', 'square-payment-service-fee'); ?>
         </p>
         <?php
     }

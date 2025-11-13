@@ -54,9 +54,10 @@ class SQPMT_Email_Notifications {
         $message = $this->get_customer_email_template($transaction_data);
 
         // Email headers
+        $site_domain = str_replace('www.', '', parse_url(get_site_url(), PHP_URL_HOST));
         $headers = array(
             'Content-Type: text/html; charset=UTF-8',
-            'From: ' . get_bloginfo('name') . ' <' . get_option('admin_email') . '>'
+            'From: ' . get_bloginfo('name') . ' <admin@' . $site_domain . '>'
         );
 
         // Send email
@@ -70,12 +71,13 @@ class SQPMT_Email_Notifications {
      * @return bool True if email sent successfully
      */
     public function send_admin_notification($transaction_data) {
-        // Check if admin emails are enabled
-        if (get_option('sqpmt_admin_email_enabled', 'yes') !== 'yes') {
+        // Get admin email address from settings
+        $to = get_option('sqpmt_admin_email_address', get_option('admin_email'));
+
+        // If email address is empty, don't send notification
+        if (empty($to)) {
             return false;
         }
-
-        $to = get_option('admin_email');
         $subject = sprintf(
             __('New Payment Received - %s', 'square-payment-service-fee'),
             SQPMT_Calculator::instance()->format_amount($transaction_data['total_amount'])
@@ -253,7 +255,6 @@ class SQPMT_Email_Notifications {
 
                 <div class="footer">
                     <p><?php echo esc_html(get_bloginfo('name')); ?></p>
-                    <p><?php echo esc_html(get_option('admin_email')); ?></p>
                 </div>
             </div>
         </body>
@@ -409,10 +410,6 @@ class SQPMT_Email_Notifications {
                         ?>
                     </div>
                 </div>
-
-                <p style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em;">
-                    <?php esc_html_e('This is an automated notification from Square Payment with Service Fee plugin.', 'square-payment-service-fee'); ?>
-                </p>
             </div>
         </body>
         </html>

@@ -86,10 +86,9 @@ class SQPMT_Payment_Form {
 
                     <div class="sqpmt-form-group">
                         <label for="sqpmt-amount">
-                            <?php esc_html_e('Amount Owed', 'square-payment-service-fee'); ?> <span class="required">*</span>
+                            <?php esc_html_e('Amount Owed (US Dollars)', 'square-payment-service-fee'); ?> <span class="required">*</span>
                         </label>
                         <div class="sqpmt-amount-input">
-                            <span class="sqpmt-currency">$</span>
                             <input
                                 type="number"
                                 id="sqpmt-amount"

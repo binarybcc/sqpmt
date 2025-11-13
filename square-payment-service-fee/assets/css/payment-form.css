@@ -103,17 +103,8 @@
     align-items: center;
 }
 
-.sqpmt-currency {
-    position: absolute;
-    left: 15px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #666;
-    pointer-events: none;
-}
-
 .sqpmt-amount-input input {
-    padding-left: 35px;
+    padding-left: 15px;
     font-size: 18px;
     font-weight: 600;
 }
