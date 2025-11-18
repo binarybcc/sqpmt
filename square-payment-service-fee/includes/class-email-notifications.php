@@ -45,19 +45,25 @@ class SQPMT_Email_Notifications {
         }
 
         $to = $transaction_data['customer_email'];
+
+        // Professional subject line - avoid spam triggers
         $subject = sprintf(
-            __('Payment Receipt - %s', 'square-payment-service-fee'),
+            __('Receipt for your payment to %s', 'square-payment-service-fee'),
             get_bloginfo('name')
         );
 
-        // Build email content
+        // Build email content (HTML only - simpler for compatibility)
         $message = $this->get_customer_email_template($transaction_data);
 
-        // Email headers
-        $site_domain = str_replace('www.', '', parse_url(get_site_url(), PHP_URL_HOST));
+        // Get from email from WordPress settings
+        $from_email = get_option('sqpmt_from_email', get_option('admin_email'));
+        $from_name = get_option('sqpmt_from_name', get_bloginfo('name'));
+
+        // Simplified headers for better compatibility
         $headers = array(
             'Content-Type: text/html; charset=UTF-8',
-            'From: ' . get_bloginfo('name') . ' <admin@' . $site_domain . '>'
+            'From: ' . $from_name . ' <' . $from_email . '>',
+            'Reply-To: ' . $from_name . ' <' . $from_email . '>',
         );
 
         // Send email
@@ -71,6 +77,11 @@ class SQPMT_Email_Notifications {
      * @return bool True if email sent successfully
      */
     public function send_admin_notification($transaction_data) {
+        // Check if admin emails are enabled
+        if (get_option('sqpmt_admin_email_enabled', 'yes') !== 'yes') {
+            return false;
+        }
+
         // Get admin email address from settings
         $to = get_option('sqpmt_admin_email_address', get_option('admin_email'));
 
@@ -78,17 +89,25 @@ class SQPMT_Email_Notifications {
         if (empty($to)) {
             return false;
         }
+
+        // Professional subject line
         $subject = sprintf(
-            __('New Payment Received - %s', 'square-payment-service-fee'),
+            __('Payment confirmation: %s received', 'square-payment-service-fee'),
             SQPMT_Calculator::instance()->format_amount($transaction_data['total_amount'])
         );
 
-        // Build email content
+        // Build email content (HTML only - simpler for compatibility)
         $message = $this->get_admin_email_template($transaction_data);
 
-        // Email headers
+        // Get from email from WordPress settings
+        $from_email = get_option('sqpmt_from_email', get_option('admin_email'));
+        $from_name = get_option('sqpmt_from_name', get_bloginfo('name'));
+
+        // Simplified headers for better compatibility
         $headers = array(
             'Content-Type: text/html; charset=UTF-8',
+            'From: ' . $from_name . ' <' . $from_email . '>',
+            'Reply-To: ' . $from_name . ' <' . $from_email . '>',
         );
 
         // Send email
@@ -186,6 +205,15 @@ class SQPMT_Email_Notifications {
 
                 <p><?php esc_html_e('Thank you for your payment! This email confirms that we have successfully received your payment.', 'square-payment-service-fee'); ?></p>
 
+                <?php if (!empty($transaction_data['account_holder_name'])): ?>
+                <div class="transaction-details" style="background-color: #fff3cd; border-color: #ffc107;">
+                    <div class="detail-row">
+                        <span class="detail-label"><?php esc_html_e('Payment Made For:', 'square-payment-service-fee'); ?></span>
+                        <span class="detail-value"><strong><?php echo esc_html($transaction_data['account_holder_name']); ?></strong></span>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <div class="transaction-details">
                     <h2><?php esc_html_e('Payment Details', 'square-payment-service-fee'); ?></h2>
 
@@ -216,7 +244,7 @@ class SQPMT_Email_Notifications {
                 </div>
 
                 <div class="transaction-details">
-                    <h3><?php esc_html_e('Billing Information', 'square-payment-service-fee'); ?></h3>
+                    <h3><?php esc_html_e('Cardholder Information', 'square-payment-service-fee'); ?></h3>
 
                     <div class="detail-row">
                         <span class="detail-label"><?php esc_html_e('Name:', 'square-payment-service-fee'); ?></span>
@@ -343,6 +371,17 @@ class SQPMT_Email_Notifications {
                     <?php echo esc_html($calculator->format_amount($transaction_data['total_amount'])); ?>
                 </div>
 
+                <?php if (!empty($transaction_data['account_holder_name'])): ?>
+                <div class="transaction-details" style="background-color: #fff3cd; border: 2px solid #ffc107; margin-bottom: 20px;">
+                    <div class="detail-row" style="border-bottom: none; text-align: center;">
+                        <span style="font-size: 1.1em;">
+                            <strong><?php esc_html_e('Payment Made For:', 'square-payment-service-fee'); ?></strong><br>
+                            <span style="font-size: 1.3em; color: #2196F3;"><?php echo esc_html($transaction_data['account_holder_name']); ?></span>
+                        </span>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <div class="transaction-details">
                     <h3><?php esc_html_e('Transaction Information', 'square-payment-service-fee'); ?></h3>
 
@@ -378,7 +417,7 @@ class SQPMT_Email_Notifications {
                 </div>
 
                 <div class="transaction-details">
-                    <h3><?php esc_html_e('Customer Information', 'square-payment-service-fee'); ?></h3>
+                    <h3><?php esc_html_e('Cardholder Information', 'square-payment-service-fee'); ?></h3>
 
                     <div class="detail-row">
                         <span class="detail-label"><?php esc_html_e('Name:', 'square-payment-service-fee'); ?></span>

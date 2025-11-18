@@ -32,6 +32,7 @@ class SQPMT_Activator {
             service_fee decimal(10,2) NOT NULL,
             total_amount decimal(10,2) NOT NULL,
             status varchar(50) NOT NULL,
+            account_holder_name varchar(255) DEFAULT NULL,
             customer_name varchar(255) NOT NULL,
             customer_email varchar(255) NOT NULL,
             customer_phone varchar(50) NOT NULL,
@@ -52,6 +53,23 @@ class SQPMT_Activator {
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+
+        // Add account_holder_name column if it doesn't exist (for existing installations)
+        $column_exists = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s",
+                DB_NAME,
+                $table_name,
+                'account_holder_name'
+            )
+        );
+
+        if (empty($column_exists)) {
+            // Column doesn't exist, add it
+            $wpdb->query(
+                "ALTER TABLE $table_name ADD COLUMN account_holder_name varchar(255) DEFAULT NULL AFTER status"
+            );
+        }
 
         // Set default options if they don't exist
         if (get_option('sqpmt_service_fee') === false) {

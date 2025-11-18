@@ -61,42 +61,62 @@ class SQPMT_Transaction_Logger {
             'service_fee' => floatval($transaction_data['service_fee']),
             'total_amount' => floatval($transaction_data['total_amount']),
             'status' => sanitize_text_field($transaction_data['status']),
-            'customer_name' => sanitize_text_field($transaction_data['customer_name']),
-            'customer_email' => sanitize_email($transaction_data['customer_email']),
-            'customer_phone' => sanitize_text_field($transaction_data['customer_phone']),
-            'customer_address_line1' => sanitize_text_field($transaction_data['customer_address_line1']),
-            'customer_city' => sanitize_text_field($transaction_data['customer_city']),
-            'customer_state' => sanitize_text_field($transaction_data['customer_state']),
-            'customer_zip' => sanitize_text_field($transaction_data['customer_zip']),
-            'customer_country' => 'US',
-            'error_message' => isset($transaction_data['error_message']) ? sanitize_textarea_field($transaction_data['error_message']) : null,
         );
+
+        // Prepare format array
+        $format = array(
+            '%s', // transaction_id
+            '%f', // amount
+            '%f', // service_fee
+            '%f', // total_amount
+            '%s', // status
+        );
+
+        // Add optional account holder name
+        if (!empty($transaction_data['account_holder_name'])) {
+            $data['account_holder_name'] = sanitize_text_field($transaction_data['account_holder_name']);
+            $format[] = '%s';
+        }
+
+        // Add customer information
+        $data['customer_name'] = sanitize_text_field($transaction_data['customer_name']);
+        $data['customer_email'] = sanitize_email($transaction_data['customer_email']);
+        $data['customer_phone'] = sanitize_text_field($transaction_data['customer_phone']);
+        $data['customer_address_line1'] = sanitize_text_field($transaction_data['customer_address_line1']);
+
+        $format[] = '%s'; // customer_name
+        $format[] = '%s'; // customer_email
+        $format[] = '%s'; // customer_phone
+        $format[] = '%s'; // customer_address_line1
 
         // Add optional address line 2
         if (!empty($transaction_data['customer_address_line2'])) {
             $data['customer_address_line2'] = sanitize_text_field($transaction_data['customer_address_line2']);
+            $format[] = '%s';
+        }
+
+        // Add remaining customer information
+        $data['customer_city'] = sanitize_text_field($transaction_data['customer_city']);
+        $data['customer_state'] = sanitize_text_field($transaction_data['customer_state']);
+        $data['customer_zip'] = sanitize_text_field($transaction_data['customer_zip']);
+        $data['customer_country'] = 'US';
+
+        $format[] = '%s'; // customer_city
+        $format[] = '%s'; // customer_state
+        $format[] = '%s'; // customer_zip
+        $format[] = '%s'; // customer_country
+
+        // Add optional error message
+        if (isset($transaction_data['error_message'])) {
+            $data['error_message'] = sanitize_textarea_field($transaction_data['error_message']);
+            $format[] = '%s';
         }
 
         // Insert into database
         $result = $wpdb->insert(
             $this->table_name,
             $data,
-            array(
-                '%s', // transaction_id
-                '%f', // amount
-                '%f', // service_fee
-                '%f', // total_amount
-                '%s', // status
-                '%s', // customer_name
-                '%s', // customer_email
-                '%s', // customer_phone
-                '%s', // customer_address_line1
-                '%s', // customer_city
-                '%s', // customer_state
-                '%s', // customer_zip
-                '%s', // customer_country
-                '%s', // error_message
-            )
+            $format
         );
 
         if ($result === false) {

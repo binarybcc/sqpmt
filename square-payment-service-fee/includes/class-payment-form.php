@@ -72,13 +72,13 @@ class SQPMT_Payment_Form {
         <div class="sqpmt-payment-form-wrapper" id="sqpmt-payment-form-wrapper">
 
             <?php if ($sandbox_mode === 'yes'): ?>
-            <div class="sqpmt-sandbox-notice">
+            <div class="sqpmt-sandbox-notice" role="alert" aria-live="polite">
                 <strong><?php esc_html_e('TEST MODE', 'square-payment-service-fee'); ?></strong>
                 <?php esc_html_e('This form is in sandbox mode. No real charges will be made.', 'square-payment-service-fee'); ?>
             </div>
             <?php endif; ?>
 
-            <form id="sqpmt-payment-form" class="sqpmt-payment-form" method="post">
+            <form id="sqpmt-payment-form" class="sqpmt-payment-form" method="post" aria-label="<?php esc_attr_e('Square Payment Form', 'square-payment-service-fee'); ?>">
 
                 <!-- Payment Amount Section -->
                 <div class="sqpmt-section">
@@ -86,7 +86,7 @@ class SQPMT_Payment_Form {
 
                     <div class="sqpmt-form-group">
                         <label for="sqpmt-amount">
-                            <?php esc_html_e('Amount Owed (US Dollars)', 'square-payment-service-fee'); ?> <span class="required">*</span>
+                            <?php esc_html_e('Amount Owed (US Dollars)', 'square-payment-service-fee'); ?> <span class="required" aria-label="<?php esc_attr_e('required', 'square-payment-service-fee'); ?>">*</span>
                         </label>
                         <div class="sqpmt-amount-input">
                             <input
@@ -96,10 +96,12 @@ class SQPMT_Payment_Form {
                                 step="0.01"
                                 min="1.00"
                                 required
+                                aria-required="true"
+                                aria-describedby="sqpmt-amount-error"
                                 placeholder="0.00"
                             >
                         </div>
-                        <span class="sqpmt-error-message" data-field="amount"></span>
+                        <span class="sqpmt-error-message" id="sqpmt-amount-error" data-field="amount" role="alert" aria-live="polite"></span>
                     </div>
 
                     <!-- Calculation Breakdown -->
@@ -124,8 +126,22 @@ class SQPMT_Payment_Form {
                     <h3><?php esc_html_e('Customer Information', 'square-payment-service-fee'); ?></h3>
 
                     <div class="sqpmt-form-group">
+                        <label for="sqpmt-account-holder-name">
+                            <?php esc_html_e('Account Holder\'s Name (if paying for someone else)', 'square-payment-service-fee'); ?> <span class="sqpmt-optional"><?php esc_html_e('(Optional)', 'square-payment-service-fee'); ?></span>
+                        </label>
+                        <input
+                            type="text"
+                            id="sqpmt-account-holder-name"
+                            name="account_holder_name"
+                            minlength="2"
+                            maxlength="255"
+                        >
+                        <span class="sqpmt-error-message" data-field="account_holder_name"></span>
+                    </div>
+
+                    <div class="sqpmt-form-group">
                         <label for="sqpmt-name">
-                            <?php esc_html_e('Full Name', 'square-payment-service-fee'); ?> <span class="required">*</span>
+                            <?php esc_html_e('Cardholder\'s Name', 'square-payment-service-fee'); ?> <span class="required">*</span>
                         </label>
                         <input
                             type="text"
@@ -141,7 +157,7 @@ class SQPMT_Payment_Form {
                     <div class="sqpmt-form-row">
                         <div class="sqpmt-form-group">
                             <label for="sqpmt-email">
-                                <?php esc_html_e('Email Address', 'square-payment-service-fee'); ?> <span class="required">*</span>
+                                <?php esc_html_e('Cardholder\'s Email Address', 'square-payment-service-fee'); ?> <span class="required">*</span>
                             </label>
                             <input
                                 type="email"
@@ -154,7 +170,7 @@ class SQPMT_Payment_Form {
 
                         <div class="sqpmt-form-group">
                             <label for="sqpmt-phone">
-                                <?php esc_html_e('Phone Number', 'square-payment-service-fee'); ?> <span class="required">*</span>
+                                <?php esc_html_e('Cardholder\'s Phone Number', 'square-payment-service-fee'); ?> <span class="required">*</span>
                             </label>
                             <input
                                 type="tel"
@@ -169,7 +185,7 @@ class SQPMT_Payment_Form {
 
                     <div class="sqpmt-form-group">
                         <label for="sqpmt-address-line1">
-                            <?php esc_html_e('Street Address', 'square-payment-service-fee'); ?> <span class="required">*</span>
+                            <?php esc_html_e('Cardholder\'s Street Address', 'square-payment-service-fee'); ?> <span class="required">*</span>
                         </label>
                         <input
                             type="text"
@@ -184,7 +200,7 @@ class SQPMT_Payment_Form {
 
                     <div class="sqpmt-form-group">
                         <label for="sqpmt-address-line2">
-                            <?php esc_html_e('Address Line 2', 'square-payment-service-fee'); ?> <span class="sqpmt-optional"><?php esc_html_e('(Optional)', 'square-payment-service-fee'); ?></span>
+                            <?php esc_html_e('Cardholder\'s Address Line 2', 'square-payment-service-fee'); ?> <span class="sqpmt-optional"><?php esc_html_e('(Optional)', 'square-payment-service-fee'); ?></span>
                         </label>
                         <input
                             type="text"
@@ -197,7 +213,7 @@ class SQPMT_Payment_Form {
                     <div class="sqpmt-form-row sqpmt-form-row-3">
                         <div class="sqpmt-form-group">
                             <label for="sqpmt-city">
-                                <?php esc_html_e('City', 'square-payment-service-fee'); ?> <span class="required">*</span>
+                                <?php esc_html_e('Cardholder\'s City', 'square-payment-service-fee'); ?> <span class="required">*</span>
                             </label>
                             <input
                                 type="text"
@@ -212,7 +228,7 @@ class SQPMT_Payment_Form {
 
                         <div class="sqpmt-form-group">
                             <label for="sqpmt-state">
-                                <?php esc_html_e('State', 'square-payment-service-fee'); ?> <span class="required">*</span>
+                                <?php esc_html_e('Cardholder\'s State', 'square-payment-service-fee'); ?> <span class="required">*</span>
                             </label>
                             <select id="sqpmt-state" name="state" required>
                                 <option value=""><?php esc_html_e('Select State', 'square-payment-service-fee'); ?></option>
@@ -225,7 +241,7 @@ class SQPMT_Payment_Form {
 
                         <div class="sqpmt-form-group">
                             <label for="sqpmt-zip">
-                                <?php esc_html_e('ZIP Code', 'square-payment-service-fee'); ?> <span class="required">*</span>
+                                <?php esc_html_e('Cardholder\'s ZIP Code', 'square-payment-service-fee'); ?> <span class="required">*</span>
                             </label>
                             <input
                                 type="text"
@@ -253,14 +269,14 @@ class SQPMT_Payment_Form {
                 </div>
 
                 <!-- Messages -->
-                <div id="sqpmt-messages" class="sqpmt-messages"></div>
+                <div id="sqpmt-messages" class="sqpmt-messages" role="status" aria-live="polite" aria-atomic="true"></div>
 
                 <!-- Submit Button -->
                 <div class="sqpmt-form-actions">
-                    <button type="submit" id="sqpmt-submit-btn" class="sqpmt-submit-btn" disabled>
+                    <button type="submit" id="sqpmt-submit-btn" class="sqpmt-submit-btn" disabled aria-label="<?php esc_attr_e('Submit payment', 'square-payment-service-fee'); ?>">
                         <span class="sqpmt-btn-text"><?php esc_html_e('Pay Now', 'square-payment-service-fee'); ?></span>
-                        <span class="sqpmt-btn-spinner" style="display: none;">
-                            <span class="sqpmt-spinner"></span>
+                        <span class="sqpmt-btn-spinner" style="display: none;" aria-hidden="true">
+                            <span class="sqpmt-spinner" role="progressbar" aria-label="<?php esc_attr_e('Processing payment', 'square-payment-service-fee'); ?>"></span>
                             <?php esc_html_e('Processing...', 'square-payment-service-fee'); ?>
                         </span>
                     </button>
@@ -326,6 +342,7 @@ class SQPMT_Payment_Form {
             'service_fee' => $breakdown['service_fee'],
             'total_amount' => $breakdown['total_amount'],
             'status' => 'FAILED',
+            'account_holder_name' => $data['account_holder_name'],
             'customer_name' => $data['name'],
             'customer_email' => $data['email'],
             'customer_phone' => $data['phone'],

@@ -52,7 +52,15 @@ class SQPMT_Validator {
             }
         }
 
-        // Validate name
+        // Validate account holder name (optional, but if provided, must be valid)
+        if (!empty($data['account_holder_name'])) {
+            $account_holder_validation = $this->validate_name($data['account_holder_name']);
+            if (is_wp_error($account_holder_validation)) {
+                $errors['account_holder_name'] = $account_holder_validation->get_error_message();
+            }
+        }
+
+        // Validate name (cardholder)
         $name_validation = $this->validate_name($data['name'] ?? '');
         if (is_wp_error($name_validation)) {
             $errors['name'] = $name_validation->get_error_message();
@@ -336,6 +344,7 @@ class SQPMT_Validator {
     public function sanitize_payment_data($data) {
         return array(
             'amount' => floatval($data['amount'] ?? 0),
+            'account_holder_name' => sanitize_text_field($data['account_holder_name'] ?? ''),
             'name' => sanitize_text_field($data['name'] ?? ''),
             'email' => sanitize_email($data['email'] ?? ''),
             'phone' => sanitize_text_field($data['phone'] ?? ''),

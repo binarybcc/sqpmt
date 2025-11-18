@@ -243,6 +243,7 @@
         // Disable submit button and show loading state
         const submitBtn = $('#sqpmt-submit-btn');
         submitBtn.prop('disabled', true);
+        submitBtn.attr('aria-busy', 'true');
         $('.sqpmt-btn-text').hide();
         $('.sqpmt-btn-spinner').show();
 
@@ -259,6 +260,7 @@
                     action: 'sqpmt_process_payment',
                     nonce: sqpmtSettings.nonce,
                     amount: $('#sqpmt-amount').val(),
+                    account_holder_name: $('#sqpmt-account-holder-name').val(),
                     name: $('#sqpmt-name').val(),
                     email: $('#sqpmt-email').val(),
                     phone: $('#sqpmt-phone').val(),
@@ -298,6 +300,7 @@
                     complete: function() {
                         // Re-enable submit button
                         submitBtn.prop('disabled', false);
+                        submitBtn.attr('aria-busy', 'false');
                         $('.sqpmt-btn-text').show();
                         $('.sqpmt-btn-spinner').hide();
                     }
@@ -316,6 +319,7 @@
 
                 // Re-enable submit button
                 submitBtn.prop('disabled', false);
+                submitBtn.attr('aria-busy', 'false');
                 $('.sqpmt-btn-text').show();
                 $('.sqpmt-btn-spinner').hide();
             }
@@ -326,6 +330,7 @@
 
             // Re-enable submit button
             submitBtn.prop('disabled', false);
+            submitBtn.attr('aria-busy', 'false');
             $('.sqpmt-btn-text').show();
             $('.sqpmt-btn-spinner').hide();
         }
