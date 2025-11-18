@@ -78,6 +78,41 @@ class SQPMT_Activator {
             add_option('sqpmt_customer_email_enabled', 'yes');
         }
 
+        // Create rate limiting table
+        $rate_limit_table = $wpdb->prefix . 'sqpmt_rate_limits';
+        $rate_limit_sql = "CREATE TABLE IF NOT EXISTS $rate_limit_table (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            action varchar(50) NOT NULL,
+            identifier varchar(255) NOT NULL,
+            attempted_at datetime NOT NULL,
+            PRIMARY KEY (id),
+            KEY action_identifier (action, identifier),
+            KEY attempted_at (attempted_at)
+        ) $charset_collate;";
+
+        dbDelta($rate_limit_sql);
+
+        // Set default rate limiting options
+        if (get_option('sqpmt_rate_limit_enabled') === false) {
+            add_option('sqpmt_rate_limit_enabled', 'yes');
+        }
+
+        if (get_option('sqpmt_rate_limit_payment_max') === false) {
+            add_option('sqpmt_rate_limit_payment_max', '5'); // 5 attempts
+        }
+
+        if (get_option('sqpmt_rate_limit_payment_window') === false) {
+            add_option('sqpmt_rate_limit_payment_window', '300'); // 5 minutes
+        }
+
+        if (get_option('sqpmt_rate_limit_test_max') === false) {
+            add_option('sqpmt_rate_limit_test_max', '10'); // 10 attempts
+        }
+
+        if (get_option('sqpmt_rate_limit_test_window') === false) {
+            add_option('sqpmt_rate_limit_test_window', '60'); // 1 minute
+        }
+
         // Flush rewrite rules
         flush_rewrite_rules();
     }

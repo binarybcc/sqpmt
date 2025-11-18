@@ -75,39 +75,160 @@ class SQPMT_Square_API {
             return '';
         }
 
-        // Simple XOR encryption (for basic security - in production, use stronger encryption)
-        $key = $this->get_encryption_key();
-        return $this->xor_encrypt_decrypt($encrypted_token, $key);
+        // Decrypt using AES-256-GCM
+        return $this->decrypt_token($encrypted_token);
     }
 
     /**
-     * Encrypt access token for storage
+     * Encrypt access token for storage using AES-256-GCM
+     *
+     * @param string $token The token to encrypt
+     * @return string Encrypted token (base64 encoded)
      */
     public static function encrypt_access_token($token) {
+        if (empty($token)) {
+            return '';
+        }
+
+        // Check if OpenSSL is available
+        if (!function_exists('openssl_encrypt')) {
+            error_log('[Square Payment Service Fee] OpenSSL not available. Token will not be encrypted properly.');
+            // Fallback to base64 encoding (not secure, but better than plaintext)
+            return base64_encode($token);
+        }
+
+        $cipher = 'aes-256-gcm';
         $key = self::get_encryption_key();
-        return self::xor_encrypt_decrypt($token, $key);
+
+        // Generate a random IV (Initialization Vector)
+        $ivlen = openssl_cipher_iv_length($cipher);
+        $iv = openssl_random_pseudo_bytes($ivlen);
+
+        // Encrypt the token
+        $tag = '';
+        $ciphertext = openssl_encrypt(
+            $token,
+            $cipher,
+            $key,
+            OPENSSL_RAW_DATA,
+            $iv,
+            $tag,
+            '',
+            16  // Tag length for GCM
+        );
+
+        if ($ciphertext === false) {
+            error_log('[Square Payment Service Fee] Encryption failed: ' . openssl_error_string());
+            return base64_encode($token); // Fallback
+        }
+
+        // Combine IV + Tag + Ciphertext and encode
+        $encrypted = base64_encode($iv . $tag . $ciphertext);
+
+        return $encrypted;
     }
 
     /**
-     * Get encryption key based on WordPress salts
+     * Decrypt access token using AES-256-GCM
+     *
+     * @param string $encrypted_token The encrypted token
+     * @return string Decrypted token
      */
-    private static function get_encryption_key() {
-        return md5(AUTH_KEY . SECURE_AUTH_KEY);
+    private function decrypt_token($encrypted_token) {
+        if (empty($encrypted_token)) {
+            return '';
+        }
+
+        // Check if OpenSSL is available
+        if (!function_exists('openssl_decrypt')) {
+            error_log('[Square Payment Service Fee] OpenSSL not available for decryption.');
+            // Try base64 decode as fallback
+            return base64_decode($encrypted_token);
+        }
+
+        $cipher = 'aes-256-gcm';
+        $key = self::get_encryption_key();
+
+        // Decode from base64
+        $data = base64_decode($encrypted_token);
+
+        if ($data === false) {
+            error_log('[Square Payment Service Fee] Invalid encrypted token format.');
+            return '';
+        }
+
+        // Extract IV length
+        $ivlen = openssl_cipher_iv_length($cipher);
+        $tag_length = 16; // GCM tag length
+
+        // Check if data is long enough
+        if (strlen($data) < $ivlen + $tag_length) {
+            error_log('[Square Payment Service Fee] Encrypted token too short. May be legacy format.');
+            // Attempt legacy XOR decryption for backward compatibility
+            return $this->decrypt_legacy_xor($encrypted_token);
+        }
+
+        // Extract IV, tag, and ciphertext
+        $iv = substr($data, 0, $ivlen);
+        $tag = substr($data, $ivlen, $tag_length);
+        $ciphertext = substr($data, $ivlen + $tag_length);
+
+        // Decrypt
+        $plaintext = openssl_decrypt(
+            $ciphertext,
+            $cipher,
+            $key,
+            OPENSSL_RAW_DATA,
+            $iv,
+            $tag
+        );
+
+        if ($plaintext === false) {
+            error_log('[Square Payment Service Fee] Decryption failed: ' . openssl_error_string());
+            // Try legacy XOR decryption
+            return $this->decrypt_legacy_xor($encrypted_token);
+        }
+
+        return $plaintext;
     }
 
     /**
-     * XOR encryption/decryption
+     * Decrypt legacy XOR-encrypted tokens (for backward compatibility)
+     *
+     * @param string $encrypted_token The XOR-encrypted token
+     * @return string Decrypted token
      */
-    private static function xor_encrypt_decrypt($string, $key) {
+    private function decrypt_legacy_xor($encrypted_token) {
+        // Legacy XOR decryption for tokens encrypted with old method
+        $key = md5(AUTH_KEY . SECURE_AUTH_KEY);
         $result = '';
-        $string_length = strlen($string);
+        $string_length = strlen($encrypted_token);
         $key_length = strlen($key);
 
         for ($i = 0; $i < $string_length; $i++) {
-            $result .= $string[$i] ^ $key[$i % $key_length];
+            $result .= $encrypted_token[$i] ^ $key[$i % $key_length];
+        }
+
+        // If decrypted successfully, re-encrypt with AES and save
+        if (!empty($result) && strpos($result, 'EAAA') === 0) {
+            // Looks like a valid Square token, re-encrypt and update
+            $new_encrypted = self::encrypt_access_token($result);
+            update_option('sqpmt_access_token', $new_encrypted);
+            error_log('[Square Payment Service Fee] Migrated legacy XOR token to AES-256-GCM encryption.');
         }
 
         return $result;
+    }
+
+    /**
+     * Get encryption key based on WordPress salts (32 bytes for AES-256)
+     *
+     * @return string 32-byte encryption key
+     */
+    private static function get_encryption_key() {
+        // Use WordPress salts to create a 32-byte key for AES-256
+        $key_material = AUTH_KEY . SECURE_AUTH_KEY . NONCE_KEY;
+        return hash('sha256', $key_material, true);
     }
 
     /**

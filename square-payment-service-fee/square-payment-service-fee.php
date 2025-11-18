@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Square Payment with Service Fee
  * Plugin URI: https://github.com/binarybcc/sqpmt
- * Description: Accept payments through Square with an automatic service fee. Customers can make secure payments with credit cards, and a configurable service fee is automatically added.
- * Version: 1.0.0
+ * Description: Accept payments through Square with an automatic service fee. Customers can make secure payments with credit cards, and a configurable service fee is automatically added. Features AES-256-GCM encryption and rate limiting protection.
+ * Version: 1.0.1
  * Author: Binary BCC
  * Author URI: https://github.com/binarybcc
  * License: GPL v2 or later
@@ -20,7 +20,7 @@ if (!defined('WPINC')) {
 }
 
 // Define plugin constants
-define('SQPMT_VERSION', '1.0.0');
+define('SQPMT_VERSION', '1.0.1');
 define('SQPMT_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SQPMT_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('SQPMT_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -55,6 +55,7 @@ require_once SQPMT_PLUGIN_DIR . 'includes/class-validator.php';
 require_once SQPMT_PLUGIN_DIR . 'includes/class-transaction-logger.php';
 require_once SQPMT_PLUGIN_DIR . 'includes/class-email-notifications.php';
 require_once SQPMT_PLUGIN_DIR . 'includes/class-transaction-history.php';
+require_once SQPMT_PLUGIN_DIR . 'includes/class-rate-limiter.php';
 
 /**
  * Main plugin class

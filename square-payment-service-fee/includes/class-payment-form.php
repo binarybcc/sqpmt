@@ -285,6 +285,25 @@ class SQPMT_Payment_Form {
             ));
         }
 
+        // Check rate limiting (if enabled)
+        if (get_option('sqpmt_rate_limit_enabled', 'yes') === 'yes') {
+            $rate_limiter = SQPMT_Rate_Limiter::instance();
+            $identifier = SQPMT_Rate_Limiter::get_request_identifier();
+
+            $max_attempts = intval(get_option('sqpmt_rate_limit_payment_max', 5));
+            $time_window = intval(get_option('sqpmt_rate_limit_payment_window', 300));
+
+            $rate_limit_check = $rate_limiter->check_rate_limit('payment_submission', $identifier, $max_attempts, $time_window);
+
+            if ($rate_limit_check !== false && isset($rate_limit_check['limited'])) {
+                wp_send_json_error(array(
+                    'message' => $rate_limit_check['message'],
+                    'rate_limited' => true,
+                    'retry_after' => $rate_limit_check['retry_after']
+                ));
+            }
+        }
+
         // Sanitize and validate input
         $validator = SQPMT_Validator::instance();
         $data = $validator->sanitize_payment_data($_POST);
