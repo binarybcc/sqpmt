@@ -234,6 +234,59 @@ class SQPMT_Settings {
             'sqpmt_settings',
             'sqpmt_email_section'
         );
+
+        // Security Settings Section
+        add_settings_section(
+            'sqpmt_security_section',
+            __('Security & Rate Limiting', 'square-payment-service-fee'),
+            array($this, 'security_section_callback'),
+            'sqpmt_settings'
+        );
+
+        // Rate Limiting Enabled
+        register_setting('sqpmt_settings', 'sqpmt_rate_limit_enabled', array(
+            'type' => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default' => 'yes'
+        ));
+
+        add_settings_field(
+            'sqpmt_rate_limit_enabled',
+            __('Enable Rate Limiting', 'square-payment-service-fee'),
+            array($this, 'rate_limit_enabled_field'),
+            'sqpmt_settings',
+            'sqpmt_security_section'
+        );
+
+        // Payment Rate Limit Max
+        register_setting('sqpmt_settings', 'sqpmt_rate_limit_payment_max', array(
+            'type' => 'number',
+            'sanitize_callback' => 'absint',
+            'default' => 5
+        ));
+
+        add_settings_field(
+            'sqpmt_rate_limit_payment_max',
+            __('Payment Attempts Limit', 'square-payment-service-fee'),
+            array($this, 'rate_limit_payment_max_field'),
+            'sqpmt_settings',
+            'sqpmt_security_section'
+        );
+
+        // Payment Rate Limit Window
+        register_setting('sqpmt_settings', 'sqpmt_rate_limit_payment_window', array(
+            'type' => 'number',
+            'sanitize_callback' => 'absint',
+            'default' => 300
+        ));
+
+        add_settings_field(
+            'sqpmt_rate_limit_payment_window',
+            __('Payment Time Window (seconds)', 'square-payment-service-fee'),
+            array($this, 'rate_limit_payment_window_field'),
+            'sqpmt_settings',
+            'sqpmt_security_section'
+        );
     }
 
     /**
@@ -342,6 +395,10 @@ class SQPMT_Settings {
         echo '<p>' . esc_html__('Configure email notification settings.', 'square-payment-service-fee') . '</p>';
     }
 
+    public function security_section_callback() {
+        echo '<p>' . esc_html__('Configure security and rate limiting options to protect against brute force attacks.', 'square-payment-service-fee') . '</p>';
+    }
+
     /**
      * Field callbacks
      */
@@ -429,6 +486,31 @@ class SQPMT_Settings {
         <?php
     }
 
+    public function rate_limit_enabled_field() {
+        $value = get_option('sqpmt_rate_limit_enabled', 'yes');
+        ?>
+        <label>
+            <input type="checkbox" name="sqpmt_rate_limit_enabled" value="yes" <?php checked($value, 'yes'); ?>>
+            <?php esc_html_e('Enable rate limiting to prevent brute force attacks', 'square-payment-service-fee'); ?>
+        </label>
+        <p class="description">
+            <?php esc_html_e('Recommended: Limits the number of payment attempts from the same user/IP address within a time window.', 'square-payment-service-fee'); ?>
+        </p>
+        <?php
+    }
+
+    public function rate_limit_payment_max_field() {
+        $value = get_option('sqpmt_rate_limit_payment_max', 5);
+        echo '<input type="number" name="sqpmt_rate_limit_payment_max" value="' . esc_attr($value) . '" min="1" max="100" class="small-text"> ' . esc_html__('attempts', 'square-payment-service-fee');
+        echo '<p class="description">' . esc_html__('Maximum number of payment attempts allowed per time window. Default: 5 attempts.', 'square-payment-service-fee') . '</p>';
+    }
+
+    public function rate_limit_payment_window_field() {
+        $value = get_option('sqpmt_rate_limit_payment_window', 300);
+        echo '<input type="number" name="sqpmt_rate_limit_payment_window" value="' . esc_attr($value) . '" min="60" max="3600" class="small-text"> ' . esc_html__('seconds', 'square-payment-service-fee');
+        echo '<p class="description">' . esc_html__('Time window for rate limiting (in seconds). Default: 300 seconds (5 minutes).', 'square-payment-service-fee') . '</p>';
+    }
+
     /**
      * Sanitize access token (encrypt it)
      */
@@ -466,6 +548,23 @@ class SQPMT_Settings {
             wp_send_json_error(array(
                 'message' => __('Unauthorized.', 'square-payment-service-fee')
             ));
+        }
+
+        // Check rate limiting (if enabled)
+        if (get_option('sqpmt_rate_limit_enabled', 'yes') === 'yes') {
+            $rate_limiter = SQPMT_Rate_Limiter::instance();
+            $identifier = SQPMT_Rate_Limiter::get_request_identifier();
+
+            $max_attempts = intval(get_option('sqpmt_rate_limit_test_max', 10));
+            $time_window = intval(get_option('sqpmt_rate_limit_test_window', 60));
+
+            $rate_limit_check = $rate_limiter->check_rate_limit('test_connection', $identifier, $max_attempts, $time_window);
+
+            if ($rate_limit_check !== false && isset($rate_limit_check['limited'])) {
+                wp_send_json_error(array(
+                    'message' => $rate_limit_check['message']
+                ));
+            }
         }
 
         $api = SQPMT_Square_API::instance();
