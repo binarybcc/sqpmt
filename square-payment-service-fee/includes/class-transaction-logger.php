@@ -8,8 +8,8 @@
  */
 
 // If this file is called directly, abort.
-if (!defined('WPINC')) {
-    die;
+if ( ! defined( 'WPINC' ) ) {
+	die;
 }
 
 /**
@@ -17,293 +17,303 @@ if (!defined('WPINC')) {
  */
 class SQPMT_Transaction_Logger {
 
-    /**
-     * The single instance of the class.
-     */
-    protected static $_instance = null;
+	/**
+	 * The single instance of the class.
+	 */
+	protected static $_instance = null;
 
-    /**
-     * Database table name
-     */
-    private $table_name;
+	/**
+	 * Database table name
+	 */
+	private $table_name;
 
-    /**
-     * Main Instance.
-     */
-    public static function instance() {
-        if (is_null(self::$_instance)) {
-            self::$_instance = new self();
-        }
-        return self::$_instance;
-    }
+	/**
+	 * Main Instance.
+	 */
+	public static function instance() {
+		if ( is_null( self::$_instance ) ) {
+			self::$_instance = new self();
+		}
+		return self::$_instance;
+	}
 
-    /**
-     * Constructor.
-     */
-    public function __construct() {
-        global $wpdb;
-        $this->table_name = $wpdb->prefix . 'sqpmt_transactions';
-    }
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		global $wpdb;
+		$this->table_name = $wpdb->prefix . 'sqpmt_transactions';
+	}
 
-    /**
-     * Log a successful transaction
-     *
-     * @param array $transaction_data Transaction data
-     * @return int|false Transaction log ID or false on failure
-     */
-    public function log_transaction($transaction_data) {
-        global $wpdb;
+	/**
+	 * Log a successful transaction
+	 *
+	 * @param array $transaction_data Transaction data
+	 * @return int|false Transaction log ID or false on failure
+	 */
+	public function log_transaction( $transaction_data ) {
+		global $wpdb;
 
-        // Prepare data for insertion
-        $data = array(
-            'transaction_id' => sanitize_text_field($transaction_data['transaction_id']),
-            'amount' => floatval($transaction_data['amount']),
-            'service_fee' => floatval($transaction_data['service_fee']),
-            'total_amount' => floatval($transaction_data['total_amount']),
-            'status' => sanitize_text_field($transaction_data['status']),
-        );
+		// Prepare data for insertion
+		$data = array(
+			'transaction_id' => sanitize_text_field( $transaction_data['transaction_id'] ),
+			'amount'         => floatval( $transaction_data['amount'] ),
+			'service_fee'    => floatval( $transaction_data['service_fee'] ),
+			'total_amount'   => floatval( $transaction_data['total_amount'] ),
+			'status'         => sanitize_text_field( $transaction_data['status'] ),
+		);
 
-        // Prepare format array
-        $format = array(
-            '%s', // transaction_id
-            '%f', // amount
-            '%f', // service_fee
-            '%f', // total_amount
-            '%s', // status
-        );
+		// Prepare format array
+		$format = array(
+			'%s', // transaction_id
+			'%f', // amount
+			'%f', // service_fee
+			'%f', // total_amount
+			'%s', // status
+		);
 
-        // Add optional account holder name
-        if (!empty($transaction_data['account_holder_name'])) {
-            $data['account_holder_name'] = sanitize_text_field($transaction_data['account_holder_name']);
-            $format[] = '%s';
-        }
+		// Add optional account holder name
+		if ( ! empty( $transaction_data['account_holder_name'] ) ) {
+			$data['account_holder_name'] = sanitize_text_field( $transaction_data['account_holder_name'] );
+			$format[]                    = '%s';
+		}
 
-        // Add customer information
-        $data['customer_name'] = sanitize_text_field($transaction_data['customer_name']);
-        $data['customer_email'] = sanitize_email($transaction_data['customer_email']);
-        $data['customer_phone'] = sanitize_text_field($transaction_data['customer_phone']);
-        $data['customer_address_line1'] = sanitize_text_field($transaction_data['customer_address_line1']);
+		// Add customer information
+		$data['customer_name']          = sanitize_text_field( $transaction_data['customer_name'] );
+		$data['customer_email']         = sanitize_email( $transaction_data['customer_email'] );
+		$data['customer_phone']         = sanitize_text_field( $transaction_data['customer_phone'] );
+		$data['customer_address_line1'] = sanitize_text_field( $transaction_data['customer_address_line1'] );
 
-        $format[] = '%s'; // customer_name
-        $format[] = '%s'; // customer_email
-        $format[] = '%s'; // customer_phone
-        $format[] = '%s'; // customer_address_line1
+		$format[] = '%s'; // customer_name
+		$format[] = '%s'; // customer_email
+		$format[] = '%s'; // customer_phone
+		$format[] = '%s'; // customer_address_line1
 
-        // Add optional address line 2
-        if (!empty($transaction_data['customer_address_line2'])) {
-            $data['customer_address_line2'] = sanitize_text_field($transaction_data['customer_address_line2']);
-            $format[] = '%s';
-        }
+		// Add optional address line 2
+		if ( ! empty( $transaction_data['customer_address_line2'] ) ) {
+			$data['customer_address_line2'] = sanitize_text_field( $transaction_data['customer_address_line2'] );
+			$format[]                       = '%s';
+		}
 
-        // Add remaining customer information
-        $data['customer_city'] = sanitize_text_field($transaction_data['customer_city']);
-        $data['customer_state'] = sanitize_text_field($transaction_data['customer_state']);
-        $data['customer_zip'] = sanitize_text_field($transaction_data['customer_zip']);
-        $data['customer_country'] = 'US';
+		// Add remaining customer information
+		$data['customer_city']    = sanitize_text_field( $transaction_data['customer_city'] );
+		$data['customer_state']   = sanitize_text_field( $transaction_data['customer_state'] );
+		$data['customer_zip']     = sanitize_text_field( $transaction_data['customer_zip'] );
+		$data['customer_country'] = 'US';
 
-        $format[] = '%s'; // customer_city
-        $format[] = '%s'; // customer_state
-        $format[] = '%s'; // customer_zip
-        $format[] = '%s'; // customer_country
+		$format[] = '%s'; // customer_city
+		$format[] = '%s'; // customer_state
+		$format[] = '%s'; // customer_zip
+		$format[] = '%s'; // customer_country
 
-        // Add optional error message
-        if (isset($transaction_data['error_message'])) {
-            $data['error_message'] = sanitize_textarea_field($transaction_data['error_message']);
-            $format[] = '%s';
-        }
+		// Add optional error message
+		if ( isset( $transaction_data['error_message'] ) ) {
+			$data['error_message'] = sanitize_textarea_field( $transaction_data['error_message'] );
+			$format[]              = '%s';
+		}
 
-        // Insert into database
-        $result = $wpdb->insert(
-            $this->table_name,
-            $data,
-            $format
-        );
+		// Insert into database
+		$result = $wpdb->insert(
+			$this->table_name,
+			$data,
+			$format
+		);
 
-        if ($result === false) {
-            error_log('[Square Payment Service Fee] Failed to log transaction: ' . $wpdb->last_error);
-            return false;
-        }
+		if ( $result === false ) {
+			error_log( '[Square Payment Service Fee] Failed to log transaction: ' . $wpdb->last_error );
+			return false;
+		}
 
-        return $wpdb->insert_id;
-    }
+		return $wpdb->insert_id;
+	}
 
-    /**
-     * Get transaction by ID
-     *
-     * @param int $id Transaction log ID
-     * @return object|null Transaction object or null
-     */
-    public function get_transaction($id) {
-        global $wpdb;
+	/**
+	 * Get transaction by ID
+	 *
+	 * @param int $id Transaction log ID
+	 * @return object|null Transaction object or null
+	 */
+	public function get_transaction( $id ) {
+		global $wpdb;
 
-        return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$this->table_name} WHERE id = %d",
-            $id
-        ));
-    }
+		return $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$this->table_name} WHERE id = %d",
+				$id
+			)
+		);
+	}
 
-    /**
-     * Get transaction by Square transaction ID
-     *
-     * @param string $transaction_id Square transaction ID
-     * @return object|null Transaction object or null
-     */
-    public function get_transaction_by_square_id($transaction_id) {
-        global $wpdb;
+	/**
+	 * Get transaction by Square transaction ID
+	 *
+	 * @param string $transaction_id Square transaction ID
+	 * @return object|null Transaction object or null
+	 */
+	public function get_transaction_by_square_id( $transaction_id ) {
+		global $wpdb;
 
-        return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$this->table_name} WHERE transaction_id = %s",
-            $transaction_id
-        ));
-    }
+		return $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$this->table_name} WHERE transaction_id = %s",
+				$transaction_id
+			)
+		);
+	}
 
-    /**
-     * Get recent transactions
-     *
-     * @param int $limit Number of transactions to retrieve
-     * @param int $offset Offset for pagination
-     * @return array Array of transaction objects
-     */
-    public function get_recent_transactions($limit = 20, $offset = 0) {
-        global $wpdb;
+	/**
+	 * Get recent transactions
+	 *
+	 * @param int $limit Number of transactions to retrieve
+	 * @param int $offset Offset for pagination
+	 * @return array Array of transaction objects
+	 */
+	public function get_recent_transactions( $limit = 20, $offset = 0 ) {
+		global $wpdb;
 
-        return $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$this->table_name} ORDER BY created_at DESC LIMIT %d OFFSET %d",
-            $limit,
-            $offset
-        ));
-    }
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$this->table_name} ORDER BY created_at DESC LIMIT %d OFFSET %d",
+				$limit,
+				$offset
+			)
+		);
+	}
 
-    /**
-     * Get transactions by date range
-     *
-     * @param string $start_date Start date (Y-m-d format)
-     * @param string $end_date End date (Y-m-d format)
-     * @param int $limit Limit results
-     * @param int $offset Offset for pagination
-     * @return array Array of transaction objects
-     */
-    public function get_transactions_by_date_range($start_date, $end_date, $limit = 100, $offset = 0) {
-        global $wpdb;
+	/**
+	 * Get transactions by date range
+	 *
+	 * @param string $start_date Start date (Y-m-d format)
+	 * @param string $end_date End date (Y-m-d format)
+	 * @param int    $limit Limit results
+	 * @param int    $offset Offset for pagination
+	 * @return array Array of transaction objects
+	 */
+	public function get_transactions_by_date_range( $start_date, $end_date, $limit = 100, $offset = 0 ) {
+		global $wpdb;
 
-        return $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$this->table_name}
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$this->table_name}
             WHERE DATE(created_at) BETWEEN %s AND %s
             ORDER BY created_at DESC
             LIMIT %d OFFSET %d",
-            $start_date,
-            $end_date,
-            $limit,
-            $offset
-        ));
-    }
+				$start_date,
+				$end_date,
+				$limit,
+				$offset
+			)
+		);
+	}
 
-    /**
-     * Search transactions
-     *
-     * @param string $search_term Search term
-     * @param int $limit Limit results
-     * @param int $offset Offset for pagination
-     * @return array Array of transaction objects
-     */
-    public function search_transactions($search_term, $limit = 20, $offset = 0) {
-        global $wpdb;
+	/**
+	 * Search transactions
+	 *
+	 * @param string $search_term Search term
+	 * @param int    $limit Limit results
+	 * @param int    $offset Offset for pagination
+	 * @return array Array of transaction objects
+	 */
+	public function search_transactions( $search_term, $limit = 20, $offset = 0 ) {
+		global $wpdb;
 
-        $search_term = '%' . $wpdb->esc_like($search_term) . '%';
+		$search_term = '%' . $wpdb->esc_like( $search_term ) . '%';
 
-        return $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$this->table_name}
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$this->table_name}
             WHERE customer_name LIKE %s
             OR customer_email LIKE %s
             OR transaction_id LIKE %s
             ORDER BY created_at DESC
             LIMIT %d OFFSET %d",
-            $search_term,
-            $search_term,
-            $search_term,
-            $limit,
-            $offset
-        ));
-    }
+				$search_term,
+				$search_term,
+				$search_term,
+				$limit,
+				$offset
+			)
+		);
+	}
 
-    /**
-     * Get total transaction count
-     *
-     * @param array $filters Optional filters
-     * @return int Transaction count
-     */
-    public function get_transaction_count($filters = array()) {
-        global $wpdb;
+	/**
+	 * Get total transaction count
+	 *
+	 * @param array $filters Optional filters
+	 * @return int Transaction count
+	 */
+	public function get_transaction_count( $filters = array() ) {
+		global $wpdb;
 
-        $where = array('1=1');
-        $values = array();
+		$where  = array( '1=1' );
+		$values = array();
 
-        // Filter by date range
-        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
-            $where[] = 'DATE(created_at) BETWEEN %s AND %s';
-            $values[] = $filters['start_date'];
-            $values[] = $filters['end_date'];
-        }
+		// Filter by date range
+		if ( ! empty( $filters['start_date'] ) && ! empty( $filters['end_date'] ) ) {
+			$where[]  = 'DATE(created_at) BETWEEN %s AND %s';
+			$values[] = $filters['start_date'];
+			$values[] = $filters['end_date'];
+		}
 
-        // Filter by status
-        if (!empty($filters['status'])) {
-            $where[] = 'status = %s';
-            $values[] = $filters['status'];
-        }
+		// Filter by status
+		if ( ! empty( $filters['status'] ) ) {
+			$where[]  = 'status = %s';
+			$values[] = $filters['status'];
+		}
 
-        // Filter by search term
-        if (!empty($filters['search'])) {
-            $search_term = '%' . $wpdb->esc_like($filters['search']) . '%';
-            $where[] = '(customer_name LIKE %s OR customer_email LIKE %s OR transaction_id LIKE %s)';
-            $values[] = $search_term;
-            $values[] = $search_term;
-            $values[] = $search_term;
-        }
+		// Filter by search term
+		if ( ! empty( $filters['search'] ) ) {
+			$search_term = '%' . $wpdb->esc_like( $filters['search'] ) . '%';
+			$where[]     = '(customer_name LIKE %s OR customer_email LIKE %s OR transaction_id LIKE %s)';
+			$values[]    = $search_term;
+			$values[]    = $search_term;
+			$values[]    = $search_term;
+		}
 
-        $where_clause = implode(' AND ', $where);
+		$where_clause = implode( ' AND ', $where );
 
-        if (!empty($values)) {
-            $query = $wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->table_name} WHERE {$where_clause}",
-                $values
-            );
-        } else {
-            $query = "SELECT COUNT(*) FROM {$this->table_name} WHERE {$where_clause}";
-        }
+		if ( ! empty( $values ) ) {
+			$query = $wpdb->prepare(
+				"SELECT COUNT(*) FROM {$this->table_name} WHERE {$where_clause}",
+				$values
+			);
+		} else {
+			$query = "SELECT COUNT(*) FROM {$this->table_name} WHERE {$where_clause}";
+		}
 
-        return intval($wpdb->get_var($query));
-    }
+		return intval( $wpdb->get_var( $query ) );
+	}
 
-    /**
-     * Get transaction statistics
-     *
-     * @param string $period Period for stats (today, week, month, year, all)
-     * @return array Statistics array
-     */
-    public function get_statistics($period = 'all') {
-        global $wpdb;
+	/**
+	 * Get transaction statistics
+	 *
+	 * @param string $period Period for stats (today, week, month, year, all)
+	 * @return array Statistics array
+	 */
+	public function get_statistics( $period = 'all' ) {
+		global $wpdb;
 
-        $where = '';
+		$where = '';
 
-        switch ($period) {
-            case 'today':
-                $where = 'WHERE DATE(created_at) = CURDATE()';
-                break;
-            case 'week':
-                $where = 'WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
-                break;
-            case 'month':
-                $where = 'WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
-                break;
-            case 'year':
-                $where = 'WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)';
-                break;
-            default:
-                $where = '';
-        }
+		switch ( $period ) {
+			case 'today':
+				$where = 'WHERE DATE(created_at) = CURDATE()';
+				break;
+			case 'week':
+				$where = 'WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
+				break;
+			case 'month':
+				$where = 'WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+				break;
+			case 'year':
+				$where = 'WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)';
+				break;
+			default:
+				$where = '';
+		}
 
-        $stats = $wpdb->get_row(
-            "SELECT
+		$stats = $wpdb->get_row(
+			"SELECT
                 COUNT(*) as total_transactions,
                 COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as successful_transactions,
                 COUNT(CASE WHEN status != 'COMPLETED' THEN 1 END) as failed_transactions,
@@ -311,24 +321,26 @@ class SQPMT_Transaction_Logger {
                 COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN service_fee ELSE 0 END), 0) as total_fees,
                 COALESCE(AVG(CASE WHEN status = 'COMPLETED' THEN total_amount ELSE NULL END), 0) as avg_transaction_amount
             FROM {$this->table_name} {$where}",
-            ARRAY_A
-        );
+			ARRAY_A
+		);
 
-        return $stats;
-    }
+		return $stats;
+	}
 
-    /**
-     * Delete old transactions
-     *
-     * @param int $days Delete transactions older than this many days
-     * @return int|false Number of rows deleted or false on failure
-     */
-    public function delete_old_transactions($days = 90) {
-        global $wpdb;
+	/**
+	 * Delete old transactions
+	 *
+	 * @param int $days Delete transactions older than this many days
+	 * @return int|false Number of rows deleted or false on failure
+	 */
+	public function delete_old_transactions( $days = 90 ) {
+		global $wpdb;
 
-        return $wpdb->query($wpdb->prepare(
-            "DELETE FROM {$this->table_name} WHERE created_at < DATE_SUB(NOW(), INTERVAL %d DAY)",
-            $days
-        ));
-    }
+		return $wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$this->table_name} WHERE created_at < DATE_SUB(NOW(), INTERVAL %d DAY)",
+				$days
+			)
+		);
+	}
 }

@@ -6,8 +6,8 @@
  */
 
 // If this file is called directly, abort.
-if (!defined('WPINC')) {
-    die;
+if ( ! defined( 'WPINC' ) ) {
+	die;
 }
 
 /**
@@ -15,17 +15,17 @@ if (!defined('WPINC')) {
  */
 class SQPMT_Activator {
 
-    /**
-     * Activate the plugin.
-     */
-    public static function activate() {
-        global $wpdb;
+	/**
+	 * Activate the plugin.
+	 */
+	public static function activate() {
+		global $wpdb;
 
-        // Create transactions table
-        $table_name = $wpdb->prefix . 'sqpmt_transactions';
-        $charset_collate = $wpdb->get_charset_collate();
+		// Create transactions table
+		$table_name      = $wpdb->prefix . 'sqpmt_transactions';
+		$charset_collate = $wpdb->get_charset_collate();
 
-        $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+		$sql = "CREATE TABLE IF NOT EXISTS $table_name (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             transaction_id varchar(255) NOT NULL,
             amount decimal(10,2) NOT NULL,
@@ -51,54 +51,54 @@ class SQPMT_Activator {
             KEY created_at (created_at)
         ) $charset_collate;";
 
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( $sql );
 
-        // Add account_holder_name column if it doesn't exist (for existing installations)
-        $column_exists = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s",
-                DB_NAME,
-                $table_name,
-                'account_holder_name'
-            )
-        );
+		// Add account_holder_name column if it doesn't exist (for existing installations)
+		$column_exists = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s AND COLUMN_NAME = %s',
+				DB_NAME,
+				$table_name,
+				'account_holder_name'
+			)
+		);
 
-        if (empty($column_exists)) {
-            // Column doesn't exist, add it
-            $wpdb->query(
-                "ALTER TABLE $table_name ADD COLUMN account_holder_name varchar(255) DEFAULT NULL AFTER status"
-            );
-        }
+		if ( empty( $column_exists ) ) {
+			// Column doesn't exist, add it
+			$wpdb->query(
+				"ALTER TABLE $table_name ADD COLUMN account_holder_name varchar(255) DEFAULT NULL AFTER status"
+			);
+		}
 
-        // Set default options if they don't exist
-        if (get_option('sqpmt_service_fee') === false) {
-            add_option('sqpmt_service_fee', '3.5');
-        }
+		// Set default options if they don't exist
+		if ( get_option( 'sqpmt_service_fee' ) === false ) {
+			add_option( 'sqpmt_service_fee', '3.5' );
+		}
 
-        if (get_option('sqpmt_sandbox_mode') === false) {
-            add_option('sqpmt_sandbox_mode', 'yes');
-        }
+		if ( get_option( 'sqpmt_sandbox_mode' ) === false ) {
+			add_option( 'sqpmt_sandbox_mode', 'yes' );
+		}
 
-        if (get_option('sqpmt_success_message') === false) {
-            add_option('sqpmt_success_message', 'Thank you for your payment! Your transaction ID is: {transaction_id}');
-        }
+		if ( get_option( 'sqpmt_success_message' ) === false ) {
+			add_option( 'sqpmt_success_message', 'Thank you for your payment! Your transaction ID is: {transaction_id}' );
+		}
 
-        if (get_option('sqpmt_failure_message') === false) {
-            add_option('sqpmt_failure_message', 'Payment failed. Please check your card details and try again.');
-        }
+		if ( get_option( 'sqpmt_failure_message' ) === false ) {
+			add_option( 'sqpmt_failure_message', 'Payment failed. Please check your card details and try again.' );
+		}
 
-        if (get_option('sqpmt_admin_email_enabled') === false) {
-            add_option('sqpmt_admin_email_enabled', 'yes');
-        }
+		if ( get_option( 'sqpmt_admin_email_enabled' ) === false ) {
+			add_option( 'sqpmt_admin_email_enabled', 'yes' );
+		}
 
-        if (get_option('sqpmt_customer_email_enabled') === false) {
-            add_option('sqpmt_customer_email_enabled', 'yes');
-        }
+		if ( get_option( 'sqpmt_customer_email_enabled' ) === false ) {
+			add_option( 'sqpmt_customer_email_enabled', 'yes' );
+		}
 
-        // Create rate limiting table
-        $rate_limit_table = $wpdb->prefix . 'sqpmt_rate_limits';
-        $rate_limit_sql = "CREATE TABLE IF NOT EXISTS $rate_limit_table (
+		// Create rate limiting table
+		$rate_limit_table = $wpdb->prefix . 'sqpmt_rate_limits';
+		$rate_limit_sql   = "CREATE TABLE IF NOT EXISTS $rate_limit_table (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             action varchar(50) NOT NULL,
             identifier varchar(255) NOT NULL,
@@ -108,30 +108,30 @@ class SQPMT_Activator {
             KEY attempted_at (attempted_at)
         ) $charset_collate;";
 
-        dbDelta($rate_limit_sql);
+		dbDelta( $rate_limit_sql );
 
-        // Set default rate limiting options
-        if (get_option('sqpmt_rate_limit_enabled') === false) {
-            add_option('sqpmt_rate_limit_enabled', 'yes');
-        }
+		// Set default rate limiting options
+		if ( get_option( 'sqpmt_rate_limit_enabled' ) === false ) {
+			add_option( 'sqpmt_rate_limit_enabled', 'yes' );
+		}
 
-        if (get_option('sqpmt_rate_limit_payment_max') === false) {
-            add_option('sqpmt_rate_limit_payment_max', '5'); // 5 attempts
-        }
+		if ( get_option( 'sqpmt_rate_limit_payment_max' ) === false ) {
+			add_option( 'sqpmt_rate_limit_payment_max', '5' ); // 5 attempts
+		}
 
-        if (get_option('sqpmt_rate_limit_payment_window') === false) {
-            add_option('sqpmt_rate_limit_payment_window', '300'); // 5 minutes
-        }
+		if ( get_option( 'sqpmt_rate_limit_payment_window' ) === false ) {
+			add_option( 'sqpmt_rate_limit_payment_window', '300' ); // 5 minutes
+		}
 
-        if (get_option('sqpmt_rate_limit_test_max') === false) {
-            add_option('sqpmt_rate_limit_test_max', '10'); // 10 attempts
-        }
+		if ( get_option( 'sqpmt_rate_limit_test_max' ) === false ) {
+			add_option( 'sqpmt_rate_limit_test_max', '10' ); // 10 attempts
+		}
 
-        if (get_option('sqpmt_rate_limit_test_window') === false) {
-            add_option('sqpmt_rate_limit_test_window', '60'); // 1 minute
-        }
+		if ( get_option( 'sqpmt_rate_limit_test_window' ) === false ) {
+			add_option( 'sqpmt_rate_limit_test_window', '60' ); // 1 minute
+		}
 
-        // Flush rewrite rules
-        flush_rewrite_rules();
-    }
+		// Flush rewrite rules
+		flush_rewrite_rules();
+	}
 }
